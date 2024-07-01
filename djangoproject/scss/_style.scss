@@ -41,11 +41,19 @@ a {
         color: var(--text-l10);
     }
 
+    &:focus {
+        outline: 2px solid currentColor;
+    }
+
     &:active,
     &:focus,
     &:hover {
         color: var(--text-l20);
     }
+}
+
+button:focus {
+    outline: 2px solid currentColor;
 }
 
 ::selection {
@@ -474,22 +482,24 @@ blockquote {
     z-index: 0;
 
     .container {
+        display: flex;
+        flex-direction: row;
         @include respond-min(768px) {
             position: relative;
         }
     }
+
+    .mobile-toggle {margin-left: auto}
 
     .meta {
         @include font-size(13);
         color: var(--primary);
         font-weight: 700;
         width: auto;
-        float: left;
         margin: 8px 0 0 10px;
         display: none;
 
         @include respond-min(1150px) {
-            float: left;
             width: 200px;
             display: block;
         }
@@ -503,7 +513,6 @@ blockquote {
         background: url(../img/logo-django.png) 0 0 no-repeat;
         color: var(--white-color);
         display: block;
-        float: left;
         font-weight: 700;
         margin: 10px;
         overflow: hidden;
@@ -529,7 +538,6 @@ blockquote {
         color: var(--menu);
         cursor: pointer;
         display: block;
-        float: right;
         height: 45px;
         line-height: 48px;
         margin: 4px 10px;
@@ -563,7 +571,6 @@ blockquote {
 
         @include respond-min(768px) {
             width: auto;
-            float: right;
             max-height: none; // always show menu on a desktop width
         }
 
@@ -586,12 +593,14 @@ blockquote {
             text-transform: uppercase;
             margin: 0 10px;
             border-top: 1px solid lighten($green-dark, 5%);
+            padding: 20px 0px;
 
             @include respond-min(768px) {
                 margin: 0;
                 border: 0;
                 float: left;
                 text-align: left;
+                padding: 20px 10px;
             }
 
             &.active a {
@@ -602,16 +611,11 @@ blockquote {
         a {
             color: var(--menu);
             display: block;
-            padding: 20px 0px;
             text-decoration: none;
 
             &:active,
             &:hover {
                 color: var(--secondary-accent);
-            }
-
-            @include respond-min(768px) {
-                padding: 20px 10px;
             }
         }
 
@@ -1229,9 +1233,13 @@ a.cta {
         font-style: normal;
     }
 
-    &:hover,
-    &:focus {
+    &:hover {
         background: lighten($green-medium, 4%);
+    }
+
+    &:focus {
+        outline-offset: 2px;
+        outline-color: var(--primary);
     }
 
     &:active {

@@ -165,7 +165,7 @@ class RedirectsTests(TestCase):
     def test_internals_team(self):
         response = self.client.get(
             "/en/dev/internals/team/",
-            HTTP_HOST="docs.djangoproject.localhost:8000",
+            headers={"host": "docs.djangoproject.localhost:8000"},
         )
         self.assertRedirects(
             response,
@@ -190,7 +190,7 @@ class SearchFormTestCase(TestCase):
 
     def test_empty_get(self):
         response = self.client.get(
-            "/en/dev/search/", HTTP_HOST="docs.djangoproject.localhost:8000"
+            "/en/dev/search/", headers={"host": "docs.djangoproject.localhost:8000"}
         )
         self.assertEqual(response.status_code, 200)
 
@@ -303,7 +303,7 @@ class UpdateDocTests(TestCase):
                 }
             ]
         )
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.release.documents.all(),
             ["This is the title"],
             transform=attrgetter("title"),
@@ -319,7 +319,7 @@ class UpdateDocTests(TestCase):
                 }
             ]
         )
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.release.documents.all(),
             ["Title & title"],
             transform=attrgetter("title"),
@@ -333,7 +333,7 @@ class UpdateDocTests(TestCase):
                 {"current_page_name": "foo/3"},
             ]
         )
-        self.assertQuerysetEqual(self.release.documents.all(), [])
+        self.assertQuerySetEqual(self.release.documents.all(), [])
 
     def test_excluded_documents(self):
         """
@@ -375,7 +375,7 @@ class SitemapTests(TestCase):
 
     def test_sitemap_index(self):
         response = self.client.get(
-            "/sitemap.xml", HTTP_HOST="docs.djangoproject.localhost:8000"
+            "/sitemap.xml", headers={"host": "docs.djangoproject.localhost:8000"}
         )
         self.assertContains(response, "<sitemap>", count=2)
         self.assertContains(
@@ -394,7 +394,7 @@ class SitemapTests(TestCase):
 
     def test_sitemap_404(self):
         response = self.client.get(
-            "/sitemap-xx.xml", HTTP_HOST="docs.djangoproject.localhost:8000"
+            "/sitemap-xx.xml", headers={"host": "docs.djangoproject.localhost:8000"}
         )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(
@@ -416,7 +416,10 @@ class DocumentManagerTest(TestCase):
                         '<p>See <a class="reference internal" href="../../../ref/class-based-views/">'
                         '<span class="doc">Built-in class-based views API</span></a>.</p>\n</div>\n'
                     ),
-                    "breadcrumbs": [],
+                    "breadcrumbs": [
+                        {"path": "topics", "title": "Using Django"},
+                        {"path": "topics/http", "title": "Handling HTTP requests"},
+                    ],
                     "parents": "topics http",
                     "slug": "generic-views",
                     "title": "Generic views",
@@ -436,7 +439,9 @@ class DocumentManagerTest(TestCase):
                         '<a class="reference external" href="https://code.djangoproject.com/ticket/13560">bug</a> that\n'
                         "affected datetime form field widgets when localization was enabled.</p>\n</div>\n"
                     ),
-                    "breadcrumbs": [],
+                    "breadcrumbs": [
+                        {"path": "releases", "title": "Release notes"},
+                    ],
                     "parents": "releases",
                     "slug": "1.2.1",
                     "title": "Django 1.2.1 release notes",
@@ -455,7 +460,9 @@ class DocumentManagerTest(TestCase):
                         'where <code class="docutils literal"><span class="pre">utils.http.is_safe_url()</span></code> crashes on bytestring URLs '
                         '(<a class="reference external" href="https://code.djangoproject.com/ticket/26308">#26308</a>).</p>\n</div>\n'
                     ),
-                    "breadcrumbs": [],
+                    "breadcrumbs": [
+                        {"path": "releases", "title": "Release notes"},
+                    ],
                     "parents": "releases",
                     "slug": "1.9.4",
                     "title": "Django 1.9.4 release notes",
@@ -473,7 +480,10 @@ class DocumentManagerTest(TestCase):
                         '<p>Voir <a class="reference internal" href="../../../ref/class-based-views/">'
                         '<span class="doc">API des vues intégrées fondées sur les classes.</span></a>.</p>\n</div>\n'
                     ),
-                    "breadcrumbs": [],
+                    "breadcrumbs": [
+                        {"path": "topics", "title": "Using Django"},
+                        {"path": "topics/http", "title": "Handling HTTP requests"},
+                    ],
                     "parents": "topics http",
                     "slug": "generic-views",
                     "title": "Vues génériques",
@@ -494,7 +504,9 @@ class DocumentManagerTest(TestCase):
                         '<a class="reference external" href="https://code.djangoproject.com/ticket/13560">bug</a> that\n'
                         "affected datetime form field widgets when localization was enabled.</p>\n</div>\n"
                     ),
-                    "breadcrumbs": [],
+                    "breadcrumbs": [
+                        {"path": "releases", "title": "Release notes"},
+                    ],
                     "parents": "releases",
                     "slug": "1.2.1",
                     "title": "Notes de publication de Django 1.2.1",
@@ -514,7 +526,9 @@ class DocumentManagerTest(TestCase):
                         'where <code class="docutils literal"><span class="pre">utils.http.is_safe_url()</span></code> crashes on bytestring URLs '
                         '(<a class="reference external" href="https://code.djangoproject.com/ticket/26308">#26308</a>).</p>\n</div>\n'
                     ),
-                    "breadcrumbs": [],
+                    "breadcrumbs": [
+                        {"path": "releases", "title": "Release notes"},
+                    ],
                     "parents": "releases",
                     "slug": "1.9.4",
                     "title": "Notes de publication de Django 1.9.4",
@@ -531,12 +545,6 @@ class DocumentManagerTest(TestCase):
         Document.objects.search_update()
 
     def test_search(self):
-        query_text = "django"
-        document_list = list(
-            Document.objects.search(query_text, self.release).values_list(
-                "rank", "path", "headline", "highlight"
-            )
-        )
         expected_list = [
             (
                 0.96982837,
@@ -558,31 +566,45 @@ class DocumentManagerTest(TestCase):
                 ),
             ),
         ]
-        self.assertSequenceEqual(document_list, expected_list)
+        self.assertQuerySetEqual(
+            Document.objects.search("django", self.release),
+            expected_list,
+            transform=attrgetter("rank", "path", "headline", "highlight"),
+        )
 
     def test_websearch(self):
-        query_text = 'django "release notes" -packaging'
-        document_queryset = Document.objects.search(
-            query_text, self.release
-        ).values_list("title", "rank")
-        document_list = [("Django 1.9.4 release notes", 1.5675676)]
-        self.assertSequenceEqual(list(document_queryset), document_list)
+        self.assertQuerySetEqual(
+            Document.objects.search('django "release notes" -packaging', self.release),
+            [("Django 1.9.4 release notes", 1.5675676)],
+            transform=attrgetter("title", "rank"),
+        )
 
     def test_multilingual_search(self):
-        query_text = "publication"
-        queryset = Document.objects.search(query_text, self.release_fr).values_list(
-            "title", "rank"
-        )
-        self.assertSequenceEqual(
-            queryset,
+        self.assertQuerySetEqual(
+            Document.objects.search("publication", self.release_fr),
             [
                 ("Notes de publication de Django 1.2.1", 1.0693262),
                 ("Notes de publication de Django 1.9.4", 1.0458658),
             ],
+            transform=attrgetter("title", "rank"),
         )
 
     def test_empty_search(self):
         self.assertSequenceEqual(Document.objects.search("", self.release), [])
+
+    def test_search_breadcrumbs(self):
+        doc = (
+            Document.objects.filter(title="Generic views")
+            .search("generic", self.release)
+            .get()
+        )
+        self.assertEqual(
+            doc.breadcrumbs,
+            [
+                {"path": "topics", "title": "Using Django"},
+                {"path": "topics/http", "title": "Handling HTTP requests"},
+            ],
+        )
 
     def test_search_reset(self):
         self.assertEqual(Document.objects.exclude(search=None).count(), 6)
